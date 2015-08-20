@@ -39,7 +39,7 @@ func RestartOnChange() {
 		case err := <-watcher.Error:
 			logger.Printf("Watcher error: %s\n", err)
 		case ev := <-watcher.Event:
-			log.Println("change", ev.Name, exePath, ev)
+			// log.Println("change", ev.Name, exePath, ev)
 			if ev.Name == exePath && (ev.IsModify() || ev.IsCreate()) {
 				logger.Printf("%s changed. Restarting via exec.\n", exePath)
 				syscall.Exec(exePath, os.Args, os.Environ())
