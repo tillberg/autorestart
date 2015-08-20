@@ -42,8 +42,10 @@ func CleanUpChildZombies() {
 				logger.Printf("Cleaning up zombie child with PID %d.\n", pid)
 				exited := false
 				go func() {
+					// Send SIGHUP, SIGINT, and finally SIGTERM, on long delays, to encourage still-living
+					// child processes to draw closer to the netherworld.
 					time.Sleep(5 * time.Second)
-					if err != nil {
+					if exited {
 						return
 					}
 					logger.Printf("Sending SIGHUP to %d.\n", pid)
@@ -68,7 +70,12 @@ func CleanUpChildZombies() {
 					syscall.Kill(pid, syscall.SIGTERM)
 				}()
 				ws := syscall.WaitStatus(0)
-				syscall.Wait4(pid, &ws, 0, nil)
+				_, err := syscall.Wait4(pid, &ws, 0, nil)
+				if err != nil {
+					logger.Printf("Error while waiting for PID %d to exit: %s\n", pid, err)
+				} else {
+					logger.Printf("Zombie %d has gone to rest.\n", pid)
+				}
 				exited = true
 			}
 		}
