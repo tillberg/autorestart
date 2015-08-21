@@ -90,10 +90,17 @@ func cleanUpChildZombiesInt(quiet bool) {
 	}()
 }
 
+// This is a utility function to clean up zombie subprocesses that can get left behind by
+// RestartOnChange, due to the fashion in which it restarts the process. This will synchronously
+// execute `pgrep` to get a list of child process IDs, and then asychronously call syscall.Wait4
+// on each one to remove zombies. In addition, if those processes are not yet terminated, this
+// calls SIGHUP, SIGINT, and finally SIGTERM over the course of a few minutes in order to
+// encourage them to die.
 func CleanUpChildZombies() {
 	cleanUpChildZombiesInt(false)
 }
 
+// This is identical to CleanUpChildZombies except that it outputs nothing to stderr.
 func CleanUpChildZombiesQuietly() {
 	cleanUpChildZombiesInt(true)
 }

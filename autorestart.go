@@ -11,6 +11,11 @@ import (
 
 const logPrefix = "@(dim:[autorebuild]) "
 
+// Restart the current program when the program's executable is updated.
+// This detects the program's location in the filesystem by inspecting os.Args[0],
+// then watches the filesystem for changes to that path. When it detects such a
+// change, it restarts the process by calling syscall.Exec (and thus this is not
+// portable to OSes such as Windows that do not support exec).
 func RestartOnChange() {
 	logger := log.New(os.Stderr, "[autorestart.RestartOnChange] ", log.LstdFlags)
 	exePath, err := exec.LookPath(os.Args[0])
