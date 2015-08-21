@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -12,8 +14,14 @@ import (
 	"time"
 )
 
-func CleanUpChildZombies() {
-	logger := log.New(os.Stderr, "[autorestart.CleanUpZombies] ", log.LstdFlags)
+func cleanUpChildZombiesInt(quiet bool) {
+	var logWriter io.Writer
+	if quiet {
+		logWriter = ioutil.Discard
+	} else {
+		logWriter = os.Stderr
+	}
+	logger := log.New(logWriter, "[autorestart.CleanUpZombies] ", log.LstdFlags)
 	cmd := exec.Command("pgrep", "-P", fmt.Sprintf("%d", os.Getpid()))
 	var outBuf bytes.Buffer
 	cmd.Stdout = &outBuf
@@ -80,4 +88,12 @@ func CleanUpChildZombies() {
 			}
 		}
 	}()
+}
+
+func CleanUpChildZombies() {
+	cleanUpChildZombiesInt(false)
+}
+
+func CleanUpChildZombiesQuietly() {
+	cleanUpChildZombiesInt(true)
 }
