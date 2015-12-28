@@ -1,12 +1,13 @@
 package autorestart
 
 import (
-	"github.com/howeyc/fsnotify"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"syscall"
+
+	"gopkg.in/fsnotify.v1"
 )
 
 func logf(format string, args ...interface{}) {
@@ -64,18 +65,18 @@ func NotifyOnChange() chan bool {
 			return
 		}
 		abs, _ := filepath.Abs(exeDir)
-		err = watcher.Watch(abs)
+		err = watcher.Add(abs)
 		if err != nil {
 			logf("Failed to start filesystem watcher on %s: %s", exeDir, err)
 			return
 		}
 		for {
 			select {
-			case err := <-watcher.Error:
+			case err := <-watcher.Errors:
 				logf("Watcher error: %s", err)
-			case ev := <-watcher.Event:
+			case ev := <-watcher.Events:
 				// log.Println("change", ev.Name, exePath, ev)
-				if ev.Name == exePath && (ev.IsModify() || ev.IsCreate()) {
+				if ev.Name == exePath {
 					notifyChan <- true
 				}
 			}
