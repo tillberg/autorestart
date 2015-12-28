@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"gopkg.in/fsnotify.v1"
 )
@@ -45,6 +46,8 @@ func RestartOnChange() {
 	notifyChan := NotifyOnChange()
 	<-notifyChan
 	logf("%s changed. Restarting via exec.", getExePath())
+	// Sort of a maybe-workaround for the issue detailed in RestartViaExec:
+	time.Sleep(1 * time.Millisecond)
 	RestartViaExec()
 }
 
@@ -61,7 +64,7 @@ func NotifyOnChange() chan bool {
 		exeDir := filepath.Dir(exePath)
 		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
-			logf("Failed to initialize howeyc/fsnotify watcher: %s", err)
+			logf("Failed to initialize gopkg.in/fsnotify.v1 watcher: %s", err)
 			return
 		}
 		abs, _ := filepath.Abs(exeDir)
@@ -94,5 +97,16 @@ func RestartViaExec() {
 	if exePath == errorPath {
 		return
 	}
-	syscall.Exec(exePath, os.Args, os.Environ())
+	for {
+		args := os.Args
+		env := os.Environ()
+		// logf("calling syscall.Exec with %q, %q, %q", exePath, args, env)
+		syscall.Exec(exePath, args, env)
+		// Not sure if this is due to user error, a Go regression in 1.5.x, or arch something,
+		// but this started failing when called immediately; a short delay (perhaps to switch
+		// to a different thread? or maybe to actually delay for some reason?) seems to work
+		// all the time. though.
+		logf("syscall.Exec failed, trying again in one second...")
+		time.Sleep(1 * time.Second)
+	}
 }
