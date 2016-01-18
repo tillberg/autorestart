@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"syscall"
 	"time"
@@ -101,12 +102,28 @@ func RestartViaExec() {
 		args := os.Args
 		env := os.Environ()
 		// logf("calling syscall.Exec with %q, %q, %q", exePath, args, env)
-		syscall.Exec(exePath, args, env)
+		err := syscall.Exec(exePath, args, env)
 		// Not sure if this is due to user error, a Go regression in 1.5.x, or arch something,
 		// but this started failing when called immediately; a short delay (perhaps to switch
 		// to a different thread? or maybe to actually delay for some reason?) seems to work
 		// all the time. though.
-		logf("syscall.Exec failed, trying again in one second...")
+		logf("syscall.Exec failed [%v], trying again in one second...", err)
 		time.Sleep(1 * time.Second)
 	}
+}
+
+func ParentDeathSignal(sig uintptr) error {
+	if _, _, err := syscall.RawSyscall(syscall.SYS_PRCTL, syscall.PR_SET_PDEATHSIG, sig, 0); err != 0 {
+		return err
+	}
+	return nil
+}
+
+func NotifyOnSighup() chan os.Signal {
+	// XXX it's super-kludgy to do this here, but it's also very convenient for me:
+	ParentDeathSignal(uintptr(syscall.SIGHUP))
+
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, syscall.SIGHUP)
+	return sigChan
 }
