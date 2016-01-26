@@ -112,17 +112,7 @@ func RestartViaExec() {
 	}
 }
 
-func ParentDeathSignal(sig uintptr) error {
-	if _, _, err := syscall.RawSyscall(syscall.SYS_PRCTL, syscall.PR_SET_PDEATHSIG, sig, 0); err != 0 {
-		return err
-	}
-	return nil
-}
-
 func NotifyOnSighup() chan os.Signal {
-	// XXX it's super-kludgy to do this here, but it's also very convenient for me:
-	ParentDeathSignal(uintptr(syscall.SIGHUP))
-
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, syscall.SIGHUP)
 	return sigChan
