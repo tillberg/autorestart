@@ -95,7 +95,7 @@ func RestartViaExec() {
 }
 
 func NotifyOnSighup() chan os.Signal {
-	sigChan := make(chan os.Signal)
+	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGHUP)
 	return sigChan
 }
