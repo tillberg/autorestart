@@ -99,3 +99,9 @@ func NotifyOnSighup() chan os.Signal {
 	signal.Notify(sigChan, syscall.SIGHUP)
 	return sigChan
 }
+
+func NotifyOnSigterm() chan os.Signal {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+	return sigChan
+}
